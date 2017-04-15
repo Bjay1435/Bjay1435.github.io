@@ -32,17 +32,17 @@ void printStats(CvHaarClassifierCascade*);
  ******************************************************************************/
 
 struct imageData {
-    IplImage* image;
-    Mat* matImage;
+    Mat* image;
     int height;
     int width;
-    CvMat* sum;
-    CvMat* sqsum;
+    Mat* normInt;
+    Mat* intImage;
+    Mat* sqImage;
 };
 typedef struct imageData* imageData_t;
 
-imageData_t newImageData(IplImage*);
+imageData_t newImageData(const char *);
 
-IplImage* loadGrayImage(const char*);
+IplImage* loadGrayImage(const char *);
 
 #endif /*_UTIL_HPP */

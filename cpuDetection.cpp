@@ -1,29 +1,45 @@
 #include "cpuDetection.hpp"
 #include "cascade.hpp"
 
+#define BIAS 0.5f
+
+using namespace std;
+
 
 float calculateRectangle(Mat& intImage, CvRect rect, CvRect window)
 {
-    float tx = window.x + rect.x;
-    float ty = window.y + rect.y;
+    int topX = window.x + rect.x;
+    int topY = window.y + rect.y;
+    int botX = topX + rect.width;
+    int botY = topY + rect.height;
 
-    return intImage.at<float>(ty,tx) 
-            - intImage.at<float>(ty, tx + rect.width) 
-            - intImage.at<float>(ty + rect.height, tx) 
-            + intImage.at<float>(ty + rect.height, tx +  rect.width);
+    int topLeft, topRight, botLeft, botRight;
+    topLeft  = intImage.at<int>(topY, topX);
+    topRight = intImage.at<int>(topY, botX); 
+    botLeft  = intImage.at<int>(botY, topX);
+    botRight = intImage.at<int>(botY, botX);
+
+    int ret = topLeft - topRight - botLeft + botRight;
+
+    return ret;
 }
 
-float windowMean(Mat& intImage, CvRect window)
+float windowMean(Mat& sqImage, CvRect window)
 {
-    float topX = window.x;
-    float topY = window.y;
-    float botX = topX + window.width;
-    float botY = topY + window.height;
+    int topX = window.x;
+    int topY = window.y;
+    int botX = topX + window.width;
+    int botY = topY + window.height;
 
-    return intImage.at<int>(topY,topX) 
-            - intImage.at<int>(topY, botX) 
-            - intImage.at<int>(botY, topX) 
-            + intImage.at<int>(botY + botX);
+    int topLeft, topRight, botLeft, botRight;
+    topLeft  = sqImage.at<int>(topY, topX);
+    topRight = sqImage.at<int>(topY, botX); 
+    botLeft  = sqImage.at<int>(botY, topX);
+    botRight = sqImage.at<int>(botY, botX);
+
+    int ret = topLeft - topRight - botLeft + botRight;
+
+    return ret;
 }
 
 std::vector<CvRect> runCPUdetect(cascadeClassifier_t classifier, imageData_t imData)
@@ -42,7 +58,7 @@ std::vector<CvRect> runCPUdetect(cascadeClassifier_t classifier, imageData_t imD
     int startHeight = classifier->cascade->orig_window_size.height;
 
     double scale = 1.0;
-    double factor = 2.0;
+    double factor = 2;
 
     while((scale * startWidth < imageWidth) && (scale * startHeight < imageHeight))
     {
@@ -70,91 +86,101 @@ std::vector<CvRect> cpuDetectAtScale(cascadeClassifier_t cascade, imageData_t im
 {
     std::vector<CvRect> faces;
 
-    Mat intImage = cvarrToMat(imData->sum);
+    Mat intImage = *(imData->intImage);
+    Mat sqImage  = *(imData->sqImage);
+
+    // Debug
+    cout << imData->width << imData->height << endl;
+    int windowWidth = cascade->cascade->orig_window_size.width * scale + BIAS;
+    int windowHeight = cascade->cascade->orig_window_size.height * scale + BIAS;
+
 
     // For each window
-    for (int i = 0; i < imData->width; i++)
+    for (int i = 0; i < imData->width - windowWidth; i+=1)
     {
-        for (int j = 0; j < imData->height; j++)
+        for (int j = 0; j < imData->height - windowHeight; j+=1)
         {
+
             CvRect detectionWindow;
             detectionWindow.x = i;
             detectionWindow.y = j;
-            detectionWindow.width = cascade->cascade->orig_window_size.width;
-            detectionWindow.height = cascade->cascade->orig_window_size.height;
+            detectionWindow.width = windowHeight;
+            detectionWindow.height = windowWidth;
 
-            //@TODO: do normalization calculations here
+            // Normalization calculations here
             // sd^2 = m^2 - 1/N*SUM(x^2)
-            float winMean = windowMean(intImage, detectionWindow);
-            float sqSum = windowMean(intImage, detectionWindow);
-            float invN = 1.0f /(detectionWindow.width * detectionWindow.height);
+            double invArea = 1.0f /(detectionWindow.width * detectionWindow.height);
+
+            double winMean = windowMean(intImage, detectionWindow) * invArea;
+            double sqSum = windowMean(sqImage, detectionWindow);
 
             //@TODO: maybe flipped?
-            float normalization = winMean * winMean - sqSum * sqSum;
+            double normalization = winMean * winMean - sqSum * invArea;
+            //double normalization = invArea * sqSum - winMean * winMean;
 
-            if (normalization >= 0.0f) normalization = sqrt(normalization);
+            if (normalization > 1.0f) normalization = sqrt(normalization);
             else normalization = 1.0f;
 
 
             bool windowPassed = true;
 
-            //for each stage
+            //for each stage on this window
             for (int k = 0; k < cascade->numStages; k++) 
             {
                 // accumulate stage sum
-                float stageSum = 0.f;
+                double stageSum = 0.f;
 
                 CvHaarStageClassifier stage = cascade->cascade->stage_classifier[k];
                 //for each feature in the stage
                 for (int m = 0; m < stage.count; m++)
                 {
-                    float featureSum = 0.f;
+                    double featureSum = 0.f;
                     CvHaarClassifier classifier = stage.classifier[m];
                     CvHaarFeature feature = *(classifier.haar_feature);
+                    double threshold = *(classifier.threshold) * normalization;
                     
                     //scale feature
                     CvRect newRect0;
                     CvRect newRect1;
                     CvRect newRect2;
 
-                    newRect0.x = feature.rect[0].r.x * scale;
-                    newRect0.y = feature.rect[0].r.y * scale;
-                    newRect0.width = feature.rect[0].r.width * scale;
-                    newRect0.height = feature.rect[0].r.height * scale;
+                    newRect0.x = feature.rect[0].r.x * scale + BIAS;
+                    newRect0.y = feature.rect[0].r.y * scale + BIAS;
+                    newRect0.width = feature.rect[0].r.width * scale + BIAS;
+                    newRect0.height = feature.rect[0].r.height * scale + BIAS;
 
-                    newRect1.x = feature.rect[1].r.x * scale;
-                    newRect1.y = feature.rect[1].r.y * scale;
-                    newRect1.width = feature.rect[1].r.width * scale;
-                    newRect1.height = feature.rect[1].r.height * scale;
+                    newRect1.x = feature.rect[1].r.x * scale + BIAS;
+                    newRect1.y = feature.rect[1].r.y * scale + BIAS;
+                    newRect1.width = feature.rect[1].r.width * scale + BIAS;
+                    newRect1.height = feature.rect[1].r.height * scale + BIAS;
 
                     if (feature.rect[2].weight) {
+                        newRect2.x = feature.rect[2].r.x * scale + BIAS;
+                        newRect2.y = feature.rect[2].r.y * scale + BIAS;
+                        newRect2.width = feature.rect[2].r.width * scale + BIAS;
+                        newRect2.height = feature.rect[2].r.height * scale + BIAS;
                         
-                        newRect2.x = feature.rect[2].r.x * scale;
-                        newRect2.y = feature.rect[2].r.y * scale;
-                        newRect2.width = feature.rect[2].r.width * scale;
-                        newRect2.height = feature.rect[2].r.height * scale;
+                        featureSum += calculateRectangle(intImage, newRect2, detectionWindow)
+                                     * feature.rect[2].weight * invArea;
                     }
 
-
                     featureSum += calculateRectangle(intImage, newRect0, detectionWindow)
-                                 * feature.rect[0].weight * invN;
+                                 * feature.rect[0].weight * invArea;
                     featureSum += calculateRectangle(intImage, newRect1, detectionWindow)
-                                 * feature.rect[1].weight * invN;
-                    if (feature.rect[2].weight) 
-                        featureSum += calculateRectangle(intImage, newRect2, detectionWindow)
-                                     * feature.rect[2].weight * invN;
+                                 * feature.rect[1].weight * invArea;
 
-                    if (featureSum >= *(classifier.threshold) * normalization)
+
+                    if (featureSum >= threshold)
                         stageSum += classifier.alpha[1];
                     else 
                         stageSum += classifier.alpha[0];
                 }
-                if (stageSum >= stage.threshold) {
+                if (stageSum < stage.threshold) {
                     windowPassed = false;
                     break;
                 }
             }
-            // if we get to here and we haven't broke, we have a face!!
+            // if we get to here and we haven't broken, we have a face!!
             if (windowPassed) faces.push_back(detectionWindow);
         }
     }

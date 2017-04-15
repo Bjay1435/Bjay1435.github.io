@@ -3,6 +3,7 @@
 #include <iostream>
 
 using namespace cv;
+using namespace std;
 
 /******************************************************************************
  *********************** Cascade Utility Functions ****************************
@@ -61,22 +62,41 @@ void printStats(CvHaarClassifierCascade* ch)
  ************************* Image Utility Functions ****************************
  ******************************************************************************/
 
- imageData_t newImageData(IplImage* image)
+ imageData_t newImageData(const char * image_path)
 {
     imageData_t i = (imageData_t) malloc(sizeof(struct imageData));
+    Mat* src = new Mat;
+    Mat* sum = new Mat;
+    Mat* sqsum = new Mat;
+    Mat* norm = new Mat;
 
-    int height = image->height;
-    int width = image->width;
+    (*src) = imread(image_path, IMREAD_GRAYSCALE);
 
-    //calculate integral image
-    CvMat* sum = cvCreateMat(height + 1, width + 1, CV_32SC1);
-    CvMat* sqsum = cvCreateMat(height + 1, width + 1, CV_64FC1);
+    int height = src->rows;
+    int width = src->cols;
 
-    cvIntegral(image, sum, sqsum);
+    integral(*src, *sum, *sqsum);
+    //cout << "src = "<< endl << " " << *src << endl << endl;
+    //cout << "sum = "<< endl << " " << *sum << endl << endl;
 
-    i->image = image;
-    i->sum = sum;
-    i->sqsum = sqsum;
+
+    //(*sum).convertTo(*floatSum, CV_8UC1);
+
+    double max;
+    minMaxIdx(*sum, 0, &max);
+
+    (*sum).convertTo(*norm, CV_8UC1, 255/max);
+
+    //imshow("simple output", *sum);//shows normally
+    //imshow("normalized output", *norm);
+
+    //waitKey(0);
+
+
+    i->image = src;
+    i->normInt = norm;
+    i->intImage = sum;
+    i->sqImage = sqsum;
     i->height = height;
     i->width = width;
 
