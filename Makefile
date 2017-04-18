@@ -1,7 +1,6 @@
 EXECUTABLE := opencv_test
 
-
-CC_FILES   := opencv_test.cpp util.cpp cpuDetection.cpp
+CC_FILES   := opencv_test.cpp util.cpp rect.cpp cpuDetection.cpp cpuThreadDetection
 
 ###########################################################
 
@@ -18,9 +17,9 @@ LDLIBS  := $(addprefix -l, $(LIBS))
 LDFRAMEWORKS := $(addprefix -framework , $(FRAMEWORKS))
 
 # opencv linking
-LDFLAGS	:= `pkg-config --libs opencv`
+LDFLAGS	:= `pkg-config --libs opencv` -pthread
 
-OBJS=$(OBJDIR)/opencv_test.o $(OBJDIR)/util.o $(OBJDIR)/cpuDetection.o
+OBJS=$(OBJDIR)/util.o $(OBJDIR)/rect.o $(OBJDIR)/cpuThreadDetection.o $(OBJDIR)/cpuDetection.o $(OBJDIR)/opencv_test.o
 
 
 .PHONY: dirs clean

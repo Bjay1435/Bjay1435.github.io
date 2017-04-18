@@ -1,46 +1,10 @@
 #include "cpuDetection.hpp"
-#include "cascade.hpp"
+#include "rect.hpp"
 
 #define BIAS 0.5f
 
 using namespace std;
 
-
-float calculateRectangle(Mat& intImage, CvRect rect, CvRect window)
-{
-    int topX = window.x + rect.x;
-    int topY = window.y + rect.y;
-    int botX = topX + rect.width;
-    int botY = topY + rect.height;
-
-    int topLeft, topRight, botLeft, botRight;
-    topLeft  = intImage.at<int>(topY, topX);
-    topRight = intImage.at<int>(topY, botX); 
-    botLeft  = intImage.at<int>(botY, topX);
-    botRight = intImage.at<int>(botY, botX);
-
-    int ret = topLeft - topRight - botLeft + botRight;
-
-    return ret;
-}
-
-float windowMean(Mat& sqImage, CvRect window)
-{
-    int topX = window.x;
-    int topY = window.y;
-    int botX = topX + window.width;
-    int botY = topY + window.height;
-
-    int topLeft, topRight, botLeft, botRight;
-    topLeft  = sqImage.at<int>(topY, topX);
-    topRight = sqImage.at<int>(topY, botX); 
-    botLeft  = sqImage.at<int>(botY, topX);
-    botRight = sqImage.at<int>(botY, botX);
-
-    int ret = topLeft - topRight - botLeft + botRight;
-
-    return ret;
-}
 
 std::vector<CvRect> runCPUdetect(cascadeClassifier_t classifier, imageData_t imData)
 {
@@ -63,10 +27,8 @@ std::vector<CvRect> runCPUdetect(cascadeClassifier_t classifier, imageData_t imD
     while((scale * startWidth < imageWidth) && (scale * startHeight < imageHeight))
     {
         scales.push_back(scale);
-        printf("%f, ", scale);
         scale *= factor;
     }
-    printf("\n");
 
     /*****************************************
      * For each window size, run the cascade *
@@ -75,8 +37,6 @@ std::vector<CvRect> runCPUdetect(cascadeClassifier_t classifier, imageData_t imD
     {
         double thisScale = scales[i];
         scaleFaces = cpuDetectAtScale(classifier, imData, thisScale);
-
-        //TODO: append scaleFaces to faces
         faces.insert(faces.end(), scaleFaces.begin(), scaleFaces.end());
     }
     return faces;
@@ -90,7 +50,7 @@ std::vector<CvRect> cpuDetectAtScale(cascadeClassifier_t cascade, imageData_t im
     Mat sqImage  = *(imData->sqImage);
 
     // Debug
-    cout << imData->width << imData->height << endl;
+    //cout << imData->width << imData->height << endl;
     int windowWidth = cascade->cascade->orig_window_size.width * scale + BIAS;
     int windowHeight = cascade->cascade->orig_window_size.height * scale + BIAS;
 
@@ -111,8 +71,8 @@ std::vector<CvRect> cpuDetectAtScale(cascadeClassifier_t cascade, imageData_t im
             // sd^2 = m^2 - 1/N*SUM(x^2)
             double invArea = 1.0f /(detectionWindow.width * detectionWindow.height);
 
-            double winMean = windowMean(intImage, detectionWindow) * invArea;
-            double sqSum = windowMean(sqImage, detectionWindow);
+            double winMean = findWindowMean(intImage, detectionWindow) * invArea;
+            double sqSum = findWindowMean(sqImage, detectionWindow);
 
             //@TODO: maybe flipped?
             double normalization = winMean * winMean - sqSum * invArea;
@@ -160,17 +120,17 @@ std::vector<CvRect> cpuDetectAtScale(cascadeClassifier_t cascade, imageData_t im
                         newRect2.width = feature.rect[2].r.width * scale + BIAS;
                         newRect2.height = feature.rect[2].r.height * scale + BIAS;
                         
-                        featureSum += calculateRectangle(intImage, newRect2, detectionWindow)
-                                     * feature.rect[2].weight * invArea;
+                        featureSum += calcRect(intImage, newRect2, detectionWindow)
+                                     * feature.rect[2].weight;
                     }
 
-                    featureSum += calculateRectangle(intImage, newRect0, detectionWindow)
-                                 * feature.rect[0].weight * invArea;
-                    featureSum += calculateRectangle(intImage, newRect1, detectionWindow)
-                                 * feature.rect[1].weight * invArea;
+                    featureSum += calcRect(intImage, newRect0, detectionWindow)
+                                 * feature.rect[0].weight;
+                    featureSum += calcRect(intImage, newRect1, detectionWindow)
+                                 * feature.rect[1].weight;
 
 
-                    if (featureSum >= threshold)
+                    if (featureSum * invArea >= threshold)
                         stageSum += classifier.alpha[1];
                     else 
                         stageSum += classifier.alpha[0];

@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
 #include <iostream>
+#include <pthread.h>
 
 #ifndef _UTIL_HPP
 #define _UTIL_HPP
@@ -8,8 +9,25 @@
 using namespace cv;
 
 
+class threadVector {
+public:
+    std::vector<CvRect> faces_vec;
+private:
+    pthread_mutex_t lock;
+public:
+    void combineWith(std::vector<CvRect> v)
+    {
+        pthread_mutex_lock(&lock);
+        faces_vec.insert(faces_vec.end(), v.begin(), v.end());
+        pthread_mutex_unlock(&lock);
+    }
+};
+
+
+
+
 /******************************************************************************
- *********************** Cascade Utility Functions ****************************
+ ************************* Cascade Utility Functions **************************
  ******************************************************************************/
 
 struct cascadeClassifier {
@@ -18,17 +36,20 @@ struct cascadeClassifier {
 };
 typedef struct cascadeClassifier* cascadeClassifier_t;
 
-cascadeClassifier_t newCascadeClassifier(CvHaarClassifierCascade*);
+cascadeClassifier_t newCascadeClassifier(const char*);
 
-//@TODO: free struct
+void freeCascadeClassifier(cascadeClassifier_t);
 
 CvHaarClassifierCascade* loadCVHaarCascade(const char*);
 
 void printStats(CvHaarClassifierCascade*);
 
+void groupRectangles(std::vector<CvRect> &, int, float);
+
+
 
 /******************************************************************************
- ************************* Image Utility Functions ****************************
+ ************************** Image Utility Functions ***************************
  ******************************************************************************/
 
 struct imageData {
