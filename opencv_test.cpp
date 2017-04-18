@@ -74,7 +74,7 @@ int main()
     elapsed += (cpuEnd.tv_nsec - cpuStart.tv_nsec) / 1000000000.0;
     cout << elapsed << endl;
 
-    displayResult(im, faces, image_path);
+    //displayResult(im, faces, image_path);
 
 
     // Threads

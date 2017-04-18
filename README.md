@@ -1,0 +1,4 @@
+# Reminders
+set PKG_CONFIG_PATH
+set LD_LIBRARY_PATH
+

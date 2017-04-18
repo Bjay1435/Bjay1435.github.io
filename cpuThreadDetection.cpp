@@ -2,7 +2,7 @@
 #include "rect.hpp"
 
 #define BIAS 0.5f
-#define NTHREADS 4
+#define NTHREADS 32
 
 using namespace std;
 

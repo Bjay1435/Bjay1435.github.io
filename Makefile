@@ -13,6 +13,8 @@ HOSTNAME=$(shell hostname)
 LIBS       :=
 FRAMEWORKS :=
 
+GATESINC := -I/tmp/cvinc/include
+
 LDLIBS  := $(addprefix -l, $(LIBS))
 LDFRAMEWORKS := $(addprefix -framework , $(FRAMEWORKS))
 
@@ -26,6 +28,8 @@ OBJS=$(OBJDIR)/util.o $(OBJDIR)/rect.o $(OBJDIR)/cpuThreadDetection.o $(OBJDIR)/
 
 default: $(EXECUTABLE)
 
+gates: $(EXECUTABLE)
+
 dirs: 
 		mkdir -p $(OBJDIR)/
 
@@ -36,4 +40,4 @@ $(EXECUTABLE): dirs $(OBJS)
 		$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) $(LDFRAMEWORKS)
 
 $(OBJDIR)/%.o: %.cpp
-		$(CXX) $< $(CXXFLAGS) -c -o $@
+		$(CXX) $< $(CXXFLAGS) -c -o $@ $(GATESINC)
