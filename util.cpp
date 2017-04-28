@@ -40,30 +40,34 @@ void freeCascadeClassifier(cascadeClassifier_t cascade)
 }
 
 
-void printStats(CvHaarClassifierCascade* ch)
+int printStats(CvHaarClassifierCascade* ch)
 {
     printf("numStages: %d\n", ch->count);
     printf("Original Window Size: %dx%d\n", ch->orig_window_size.width, ch->orig_window_size.height);
     printf("Real Window Size: %dx%d\n", ch->real_window_size.width, ch->real_window_size.height);
     printf("Scale: %f\n", ch->scale);
+    int numClassifiers = 0;
     for (int i = 0; i < ch->count; i++) {
         //iterate through stage classifiers
         CvHaarStageClassifier stage = ch->stage_classifier[i];
         printf("%d, %d, %d\n", stage.next, stage.child, stage.parent);
         printf("%d: numClassifiers: %d\n", i, stage.count);
         for (int j = 0; j < stage.count; j++) {
-            CvHaarClassifier classifier = stage.classifier[j];
-            printf("t: %f, l: %d, r: %d, a0: %f, a1: %f\n", *classifier.threshold, 
+            //CvHaarClassifier classifier = stage.classifier[j];
+            /*printf("t: %f, l: %d, r: %d, a0: %f, a1: %f\n", *classifier.threshold, 
                                         *classifier.left,
                                         *classifier.right, classifier.alpha[0],
                                         classifier.alpha[1]);
-            CvHaarFeature feature = *(classifier.haar_feature);
-            for (int k = 0; k < CV_HAAR_FEATURE_MAX; k++)
-                printf("count: %f ", feature.rect[k].weight);
-            printf("\n");
+            CvHaarFeature feature = *(classifier.haar_feature);*/
+            //for (int k = 0; k < CV_HAAR_FEATURE_MAX; k++) 
+                //printf("count: %f ", feature.rect[k].weight);
+            
+            //printf("\n");
+            numClassifiers++;
         }
-        printf("\n");
     }
+    printf("total: %d\n", numClassifiers);
+    return numClassifiers;
 }
 
 /******************************************************************************

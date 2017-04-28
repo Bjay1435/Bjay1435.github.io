@@ -6,7 +6,9 @@
 #include "util.hpp"
 #include "cpuDetection.hpp"
 #include "cpuThreadDetection.hpp"
+#include "cudaDetection.cuh"
 
+#define NTHREADS 16
 
 using namespace cv;
 using namespace std;
@@ -37,10 +39,12 @@ int main()
     //const char * other_cascade_path = "data/haarcascade_frontalface_default.xml";
     const char * image_path = "images/soccer.jpg";
     const char * thread_image_path = "images/soccer.jpg";
-    std::vector<CvRect> faces, thread_faces;
+    std::vector<CvRect> faces;
     threadVector threadFaces;
     struct timespec initStart, initEnd, cpuStart, cpuEnd, threadStart, threadEnd;
     double elapsed;
+
+
 
     clock_gettime(CLOCK_MONOTONIC, &initStart);
 
@@ -52,6 +56,7 @@ int main()
     imageData_t i_thread = newImageData(thread_image_path);
 
     cascadeClassifier_t c = newCascadeClassifier(cascade_path);
+
 
     clock_gettime(CLOCK_MONOTONIC, &initEnd);
 
@@ -79,15 +84,17 @@ int main()
 
     // Threads
     clock_gettime(CLOCK_MONOTONIC, &threadStart);
-    threadFaces = runThreadDetect(c, i_thread);
+    threadFaces = runThreadDetect(c, i_thread, NTHREADS);
     clock_gettime(CLOCK_MONOTONIC, &threadEnd);
     //cout << threadFaces.faces_vec.size() << endl;
     elapsed = (threadEnd.tv_sec - threadStart.tv_sec);
     elapsed += (threadEnd.tv_nsec - threadStart.tv_nsec) / 1000000000.0;
     cout << elapsed << endl;
 
-    thread_faces = threadFaces.faces_vec;
-    displayResult(im_thread, thread_faces, thread_image_path);
+    //displayResult(im_thread, threadFaces.faces_vec, thread_image_path);
+
+    printf("%p, %p\n",c, i );
+    runCudaDetection(c, i);
 
 
     freeCascadeClassifier(c);

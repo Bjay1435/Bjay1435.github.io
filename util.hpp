@@ -42,7 +42,7 @@ void freeCascadeClassifier(cascadeClassifier_t);
 
 CvHaarClassifierCascade* loadCVHaarCascade(const char*);
 
-void printStats(CvHaarClassifierCascade*);
+int printStats(CvHaarClassifierCascade*);
 
 void groupRectangles(std::vector<CvRect> &, int, float);
 

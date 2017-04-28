@@ -9,7 +9,7 @@
 #define _CPU_THREAD_HPP
 
 
-threadVector runThreadDetect(cascadeClassifier_t, imageData_t);
+threadVector runThreadDetect(cascadeClassifier_t, imageData_t, int);
 void* threadDetectMultiScale(void*);
 
 

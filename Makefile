@@ -1,6 +1,8 @@
 EXECUTABLE := opencv_test
 
-CC_FILES   := opencv_test.cpp util.cpp rect.cpp cpuDetection.cpp cpuThreadDetection
+CU_FILES   := cudaDetection.cu
+
+CC_FILES   := opencv_test.cpp util.cpp rect.cpp cpuDetection.cpp cpuThreadDetection.cpp
 
 ###########################################################
 
@@ -15,20 +17,23 @@ FRAMEWORKS :=
 
 GATESINC := -I/tmp/cvinc/include
 
+NVCCFLAGS=-O3 -m64 --gpu-architecture compute_35 -g -G
+LIBS += GL glut cudart
+
 LDLIBS  := $(addprefix -l, $(LIBS))
 LDFRAMEWORKS := $(addprefix -framework , $(FRAMEWORKS))
 
 # opencv linking
-LDFLAGS	:= `pkg-config --libs opencv` -pthread
+LDFLAGS	:= `pkg-config --libs opencv` -pthread -L/usr/local/cuda/lib64/
 
-OBJS=$(OBJDIR)/util.o $(OBJDIR)/rect.o $(OBJDIR)/cpuThreadDetection.o $(OBJDIR)/cpuDetection.o $(OBJDIR)/opencv_test.o
+NVCC=nvcc
+
+OBJS=$(OBJDIR)/util.o $(OBJDIR)/rect.o $(OBJDIR)/cudaDetection.o $(OBJDIR)/cpuThreadDetection.o $(OBJDIR)/cpuDetection.o $(OBJDIR)/opencv_test.o
 
 
 .PHONY: dirs clean
 
 default: $(EXECUTABLE)
-
-gates: $(EXECUTABLE)
 
 dirs: 
 		mkdir -p $(OBJDIR)/
@@ -41,3 +46,6 @@ $(EXECUTABLE): dirs $(OBJS)
 
 $(OBJDIR)/%.o: %.cpp
 		$(CXX) $< $(CXXFLAGS) -c -o $@ $(GATESINC)
+
+$(OBJDIR)/%.o: %.cu
+		$(NVCC) $< $(NVCCFLAGS) -c -o $@  $(GATESINC)

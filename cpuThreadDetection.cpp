@@ -2,7 +2,6 @@
 #include "rect.hpp"
 
 #define BIAS 0.5f
-#define NTHREADS 32
 
 using namespace std;
 
@@ -12,14 +11,15 @@ struct args {
     cascadeClassifier_t cascade;
     imageData_t imData;
     std::vector<CvRect>* retFaces;
+    int NTHREADS;
 } arguments;
 typedef struct args* args_t;
 
-static pthread_t threads[NTHREADS];
 
 
-threadVector runThreadDetect(cascadeClassifier_t classifier, imageData_t imData)
+threadVector runThreadDetect(cascadeClassifier_t classifier, imageData_t imData, int NTHREADS)
 {
+    pthread_t threads[NTHREADS];
     threadVector faces = threadVector();
     std::vector<CvRect>* scaleFaces[NTHREADS];
     args_t args[NTHREADS];
@@ -49,6 +49,7 @@ threadVector runThreadDetect(cascadeClassifier_t classifier, imageData_t imData)
      * Spin up threads *
      *******************/
 
+
     for (int i = 0; i < NTHREADS; i++)
     {
 
@@ -59,6 +60,7 @@ threadVector runThreadDetect(cascadeClassifier_t classifier, imageData_t imData)
         args[i]->imData = imData;
         scaleFaces[i] = new std::vector<CvRect>;
         args[i]->retFaces = scaleFaces[i];
+        args[i]->NTHREADS = NTHREADS;
 
         pthread_create(&threads[i], NULL, &threadDetectMultiScale, (void*) args[i]);
     }
@@ -71,7 +73,6 @@ threadVector runThreadDetect(cascadeClassifier_t classifier, imageData_t imData)
     for (int i = 0; i < NTHREADS; i++)
     {
         pthread_join(threads[i], &ret);
-        //printf("%lu\n", (*(args[i]->retFaces)).size());
         faces.combineWith(*(args[i]->retFaces));
         free(args[i]);
     }
@@ -88,6 +89,7 @@ void* threadDetectMultiScale(void* arg)
     std::vector<double>* scales = (args->scales);
     cascadeClassifier_t cascade = args->cascade;
     imageData_t imData = args->imData;
+    int NTHREADS = args->NTHREADS;
 
     Mat intImage = *(imData->intImage);
     Mat sqImage  = *(imData->sqImage);
