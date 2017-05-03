@@ -28,6 +28,15 @@ cascadeClassifier_t newCascadeClassifier(const char* cascade_path)
     cascadeClassifier_t c = (cascadeClassifier_t) malloc(sizeof(struct cascadeClassifier));
     c->cascade = cascade;
     c->numStages = cascade->count;
+    c->numClassifiers = 0;
+    for (int i = 0; i < cascade->count; i++) {
+        //iterate through stage classifiers
+        CvHaarStageClassifier stage = cascade->stage_classifier[i];
+        for (int j = 0; j < stage.count; j++) 
+        {
+            c->numClassifiers++;
+        }
+    }
     return c;
 }
 
@@ -52,17 +61,18 @@ int printStats(CvHaarClassifierCascade* ch)
         CvHaarStageClassifier stage = ch->stage_classifier[i];
         printf("%d, %d, %d\n", stage.next, stage.child, stage.parent);
         printf("%d: numClassifiers: %d\n", i, stage.count);
+        printf("%d\n", stage.classifier[0].count);
         for (int j = 0; j < stage.count; j++) {
-            //CvHaarClassifier classifier = stage.classifier[j];
-            /*printf("t: %f, l: %d, r: %d, a0: %f, a1: %f\n", *classifier.threshold, 
+            /*CvHaarClassifier classifier = stage.classifier[j];
+            printf("t: %f, l: %d, r: %d, a0: %f, a1: %f\n", *classifier.threshold, 
                                         *classifier.left,
                                         *classifier.right, classifier.alpha[0],
                                         classifier.alpha[1]);
-            CvHaarFeature feature = *(classifier.haar_feature);*/
-            //for (int k = 0; k < CV_HAAR_FEATURE_MAX; k++) 
-                //printf("count: %f ", feature.rect[k].weight);
+            CvHaarFeature feature = *(classifier.haar_feature);
+            for (int k = 0; k < CV_HAAR_FEATURE_MAX; k++) 
+                printf("count: %f ", feature.rect[k].weight);
             
-            //printf("\n");
+            printf("\n");*/
             numClassifiers++;
         }
     }
@@ -88,22 +98,11 @@ imageData_t newImageData(const char * image_path)
     int width = src->cols;
 
     integral(*src, *sum, *sqsum);
-    //cout << "src = "<< endl << " " << *src << endl << endl;
-    //cout << "sum = "<< endl << " " << *sum << endl << endl;
-
-
-    //(*sum).convertTo(*floatSum, CV_8UC1);
 
     double max;
     minMaxIdx(*sum, 0, &max);
 
     (*sum).convertTo(*norm, CV_8UC1, 255/max);
-
-    //imshow("simple output", *sum);//shows normally
-    //imshow("normalized output", *norm);
-
-    //waitKey(0);
-
 
     i->image = src;
     i->normInt = norm;

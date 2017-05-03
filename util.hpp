@@ -33,6 +33,7 @@ public:
 struct cascadeClassifier {
     CvHaarClassifierCascade* cascade;
     int numStages;
+    int numClassifiers;
 };
 typedef struct cascadeClassifier* cascadeClassifier_t;
 

@@ -17,7 +17,7 @@ FRAMEWORKS :=
 
 GATESINC := -I/tmp/cvinc/include
 
-NVCCFLAGS=-O3 -m64 --gpu-architecture compute_35 -g -G
+NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -g -G
 LIBS += GL glut cudart
 
 LDLIBS  := $(addprefix -l, $(LIBS))

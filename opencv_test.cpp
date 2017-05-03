@@ -57,6 +57,7 @@ int main()
 
     cascadeClassifier_t c = newCascadeClassifier(cascade_path);
 
+    printStats(c->cascade);
 
     clock_gettime(CLOCK_MONOTONIC, &initEnd);
 
@@ -71,7 +72,7 @@ int main()
      ******************/
 
     // CPU
-    clock_gettime(CLOCK_MONOTONIC, &cpuStart);
+    /*clock_gettime(CLOCK_MONOTONIC, &cpuStart);
     faces = runCPUdetect(c, i);
     clock_gettime(CLOCK_MONOTONIC, &cpuEnd);
     //cout << faces.size() << endl;
@@ -90,7 +91,7 @@ int main()
     elapsed = (threadEnd.tv_sec - threadStart.tv_sec);
     elapsed += (threadEnd.tv_nsec - threadStart.tv_nsec) / 1000000000.0;
     cout << elapsed << endl;
-
+*/
     //displayResult(im_thread, threadFaces.faces_vec, thread_image_path);
 
     printf("%p, %p\n",c, i );
