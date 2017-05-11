@@ -1,7 +1,16 @@
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/objdetect.hpp>
+#include <objdetect_c.h>
+#include <opencv2/imgcodecs.hpp>
+#include <imgcodecs_c.h>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/core/cuda.hpp>
+
 #include <stdio.h>
 #include <iostream>
 #include <pthread.h>
+
 
 #ifndef _UTIL_HPP
 #define _UTIL_HPP
@@ -64,6 +73,8 @@ struct imageData {
 typedef struct imageData* imageData_t;
 
 imageData_t newImageData(const char *);
+
+imageData_t newImageDataCuda(const char *);
 
 IplImage* loadGrayImage(const char *);
 

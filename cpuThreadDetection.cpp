@@ -2,6 +2,7 @@
 #include "rect.hpp"
 
 #define BIAS 0.5f
+//#define NTHREADS 16
 
 using namespace std;
 
@@ -106,7 +107,6 @@ void* threadDetectMultiScale(void* arg)
         {
             for (int j = 0; j < imData->height - windowHeight; j+=1)
             {
-
                 CvRect detectionWindow;
                 detectionWindow.x = i;
                 detectionWindow.y = j;
@@ -116,13 +116,9 @@ void* threadDetectMultiScale(void* arg)
                 // Normalization calculations here
                 // sd^2 = m^2 - 1/N*SUM(x^2)
                 double invArea = 1.0f /(detectionWindow.width * detectionWindow.height);
-
                 double winMean = findWindowMean(intImage, detectionWindow) * invArea;
                 double sqSum   = findWindowMean(sqImage, detectionWindow);
-
-                //@TODO: maybe flipped?
                 double normalization = winMean * winMean - sqSum * invArea;
-                //double normalization = invArea * sqSum - winMean * winMean;
 
                 if (normalization > 1.0f) 
                     normalization = sqrt(normalization);

@@ -13,18 +13,27 @@ CXXFLAGS=-O3 -Wall -g
 HOSTNAME=$(shell hostname)
 
 LIBS       :=
-FRAMEWORKS :=
 
-GATESINC := -I/tmp/cvinc/include
+GATESINC := -I/tmp/cvinc/include -I/afs/cs/academic/class/15418-s17/public/sw/opencv/include \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/build \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/core/include \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/objdetect/include \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/imgcodecs/include/ \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/imgproc/include/ \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/highgui/include/ \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/videoio/include/ \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/imgcodecs/include/opencv2/imgcodecs \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/objdetect/include/opencv2/objdetect \
 
-NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -g -G
+
+
+NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -g -G -use_fast_math
 LIBS += GL glut cudart
 
 LDLIBS  := $(addprefix -l, $(LIBS))
-LDFRAMEWORKS := $(addprefix -framework , $(FRAMEWORKS))
 
-# opencv linking
-LDFLAGS	:= `pkg-config --libs opencv` -pthread -L/usr/local/cuda/lib64/
+# opencv linking `pkg-config --libs opencv` -L/afs/cs.cmu.edu.acadmeic/class/15418-s17/public/sw/opencv/build/lib
+LDFLAGS	:= -pthread -L/usr/local/cuda/lib64/ -L/afs/cs/academic/class/15418-s17/public/sw/opencv/build/lib `pkg-config --libs opencv` 
 
 NVCC=nvcc
 
@@ -42,10 +51,10 @@ clean:
 		rm -rf $(OBJDIR) *~ $(EXECUTABLE)
 
 $(EXECUTABLE): dirs $(OBJS)
-		$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) $(LDFRAMEWORKS)
+		$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
 
 $(OBJDIR)/%.o: %.cpp
 		$(CXX) $< $(CXXFLAGS) -c -o $@ $(GATESINC)
 
 $(OBJDIR)/%.o: %.cu
-		$(NVCC) $< $(NVCCFLAGS) -c -o $@  $(GATESINC)
+		$(NVCC) $< $(NVCCFLAGS) -c -o $@ $(GATESINC)
