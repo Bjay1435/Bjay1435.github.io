@@ -1,6 +1,6 @@
 EXECUTABLE := opencv_test
 
-CU_FILES   := cudaDetection.cu
+CU_FILES   := cudaDetection.cu opencvCuda.cu
 
 CC_FILES   := opencv_test.cpp util.cpp rect.cpp cpuDetection.cpp cpuThreadDetection.cpp
 
@@ -8,7 +8,7 @@ CC_FILES   := opencv_test.cpp util.cpp rect.cpp cpuDetection.cpp cpuThreadDetect
 
 ARCH=$(shell uname | sed -e 's/-.*//g')
 OBJDIR=objs
-CXX=g++ -m64
+CXX=g++ -m64 -fopenmp
 CXXFLAGS=-O3 -Wall -g
 HOSTNAME=$(shell hostname)
 
@@ -17,6 +17,7 @@ LIBS       :=
 GATESINC := -I/tmp/cvinc/include -I/afs/cs/academic/class/15418-s17/public/sw/opencv/include \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/build \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/core/include \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/contrib/include \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/objdetect/include \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/imgcodecs/include/ \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/imgproc/include/ \
@@ -24,6 +25,9 @@ GATESINC := -I/tmp/cvinc/include -I/afs/cs/academic/class/15418-s17/public/sw/op
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/videoio/include/ \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/imgcodecs/include/opencv2/imgcodecs \
 -I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/objdetect/include/opencv2/objdetect \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/cudaobjdetect/include/ \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/cudaimgproc/include/ \
+-I/afs/cs/academic/class/15418-s17/public/sw/opencv/modules/cudawarping/include/ \
 
 
 
@@ -37,7 +41,7 @@ LDFLAGS	:= -pthread -L/usr/local/cuda/lib64/ -L/afs/cs/academic/class/15418-s17/
 
 NVCC=nvcc
 
-OBJS=$(OBJDIR)/util.o $(OBJDIR)/rect.o $(OBJDIR)/cudaDetection.o $(OBJDIR)/cpuThreadDetection.o $(OBJDIR)/cpuDetection.o $(OBJDIR)/opencv_test.o
+OBJS=$(OBJDIR)/util.o $(OBJDIR)/rect.o $(OBJDIR)/opencvCuda.o $(OBJDIR)/cudaDetection.o $(OBJDIR)/cpuThreadDetection.o $(OBJDIR)/cpuDetection.o $(OBJDIR)/opencv_test.o
 
 
 .PHONY: dirs clean

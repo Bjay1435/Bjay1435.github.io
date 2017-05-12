@@ -245,9 +245,9 @@ void cudaDetectKernel_3(GPUHaarClassifierCascade* devCascade, cudaImageData* imD
  */
 __global__
 void cudaDetectKernel_2(GPUHaarClassifierCascade* devCascade, cudaImageData* imData,
-                        GPURect* devFaces, double thisScale = 1.0)
+                        GPURect* devFaces)
 {
-    const int threadsPerBlock = 50;
+    const int threadsPerBlock = 60;
     
     int xCoord = blockIdx.x * blockDim.x + threadIdx.x;
     int yCoord = blockIdx.y * blockDim.y + threadIdx.y;
@@ -259,7 +259,7 @@ void cudaDetectKernel_2(GPUHaarClassifierCascade* devCascade, cudaImageData* imD
 
     __shared__ GPUHaarClassifier sharedClassifiers[threadsPerBlock];
 
-    for (int i = 1; i < SCALES; i++)
+    for (int i = 0; i < SCALES; i++)
     {
         int windowWidth = devCascade->orig_window_size.width * scale;
         int windowHeight = devCascade->orig_window_size.height * scale;
@@ -283,6 +283,7 @@ void cudaDetectKernel_2(GPUHaarClassifierCascade* devCascade, cudaImageData* imD
 
         for (int k = 0; k < devCascade->count; k++) 
         {
+            //printf("here %d\n", k);
             GPUHaarStageClassifier stage = devCascade->stage_classifier[k];
             
             if (tid < stage.count && tid < threadsPerBlock)
@@ -298,6 +299,7 @@ void cudaDetectKernel_2(GPUHaarClassifierCascade* devCascade, cudaImageData* imD
                 double featureSum = 0.f;
                 if (m < threadsPerBlock) classifier = sharedClassifiers[m];
                 else classifier = stage.classifier[m];
+                //classifier = stage.classifier[m];
                 GPUHaarFeature feature = (classifier.haar_feature);
                 double threshold = (classifier.threshold) * normalization;
 
@@ -310,15 +312,15 @@ void cudaDetectKernel_2(GPUHaarClassifierCascade* devCascade, cudaImageData* imD
             }
             if (stageSum < stage.threshold) {
                 windowPassed = false;
-                //printf("%d\n", k);
+                //printf("%d %d %f\n", xCoord, yCoord, scale);
             }
         }
         // if we get to here and we haven't broken, we have a face!!
         if (windowPassed) {
             devFaces[thisOffset] = detectionWindow;
-            //printf("%d %d %f, ", xCoord, yCoord, scale);
+            //printf("passed %d %d %f\n", xCoord, yCoord, scale);
         }
-        scale *= 2;
+        scale *= 2.0;
     }
 }
 
@@ -411,12 +413,6 @@ std::vector<CvRect> runCudaDetection(GPUHaarClassifierCascade* devCascade,
                 (rows - THREADS_PER_BLOCK_X + 1) / THREADS_PER_BLOCK_X + 1);
 
 
-    printf("%d, %d, %d, %d, %d %d\n", cols, rows, blocks.x, blocks.y,
-                            blocks.x * threadsPerBlock.x,
-                            blocks.y * threadsPerBlock.y);
-
-    //setup();
-
     /***********************************
      * Set up textures for device code *
      ***********************************/
@@ -476,27 +472,27 @@ std::vector<CvRect> runCudaDetection(GPUHaarClassifierCascade* devCascade,
     /***************************
      * Launch detection kernel *
      ***************************/
-    printf("Launch\n");
+/*    //printf("Launch\n");
     clock_gettime(CLOCK_MONOTONIC, &gpuStart);
-    //cudaDetectKernel_1<<<threadsPerBlock, blocks>>>(devCascade, cudaImData, devFaces);
+    cudaDetectKernel_1<<<threadsPerBlock, blocks>>>(devCascade, cudaImData, devFaces);
     cudaCheckError(cudaDeviceSynchronize());
     clock_gettime(CLOCK_MONOTONIC, &gpuEnd);
     elapsed = (gpuEnd.tv_sec - gpuStart.tv_sec);
     elapsed += (gpuEnd.tv_nsec - gpuStart.tv_nsec) / 1000000000.0;
-    printf("kernel: %f\n", elapsed);
-
-    printf("Launch\n");
+    //printf("kernel: %f\n", elapsed);
+*/
+    //printf("Launch\n");
     clock_gettime(CLOCK_MONOTONIC, &gpuStart);
     cudaDetectKernel_2<<<threadsPerBlock, blocks>>>(devCascade, cudaImData, devFaces);
     cudaCheckError(cudaDeviceSynchronize());
     clock_gettime(CLOCK_MONOTONIC, &gpuEnd);
     elapsed = (gpuEnd.tv_sec - gpuStart.tv_sec);
     elapsed += (gpuEnd.tv_nsec - gpuStart.tv_nsec) / 1000000000.0;
-    printf("kernel: %f\n", elapsed);
+    //printf("kernel: %f\n", elapsed);
 
     // version 3 uses fewer thread blocks, with 2 windows per thread, to try
     // to avoid scheduling conflicts
-    int threadsPerBlock_v3 = 1024;
+/*    int threadsPerBlock_v3 = 1024;
     int blocks_v3 = 64;
     printf("Launch\n");
     clock_gettime(CLOCK_MONOTONIC, &gpuStart);
@@ -506,7 +502,7 @@ std::vector<CvRect> runCudaDetection(GPUHaarClassifierCascade* devCascade,
     elapsed = (gpuEnd.tv_sec - gpuStart.tv_sec);
     elapsed += (gpuEnd.tv_nsec - gpuStart.tv_nsec) / 1000000000.0;
     printf("kernel: %f\n", elapsed);
-
+*/
 
     /********************
      * Read return data *
@@ -527,8 +523,10 @@ std::vector<CvRect> runCudaDetection(GPUHaarClassifierCascade* devCascade,
             faces.push_back(face);
         }
     }
+    cudaFree(devFaces);
+    free(hostFaces);
 
-    printf("Done\n");
+    //printf("Done\n");
     releaseTextures();
     return faces;
 }
@@ -594,6 +592,13 @@ cudaImageData* newCudaImageData(const char * image_path)
     return i;
 }
 
+
+void freeGPUCascade(GPUHaarClassifierCascade* devCascade)
+{
+    cudaFree(devCascade);
+}
+
+
 void allocateGPUCascade(cascadeClassifier_t cascade,
                         GPUHaarClassifierCascade** devCascade,
                         GPUHaarStageClassifier** devStageClassifier,
@@ -646,16 +651,6 @@ void allocateGPUCascade(cascadeClassifier_t cascade,
 
             cudaCheckError(cudaMalloc(devFeature, sizeof(GPUHaarFeature)));
 
-            // copy classifier info from host to device
-
-            /*cudaCheckError(cudaMemcpy(&((*devClassifier)[j].left),
-                            classifier.left,
-                            sizeof(int),
-                            cudaMemcpyHostToDevice));
-            cudaCheckError(cudaMemcpy(&((*devClassifier)[j].right),
-                            classifier.right,
-                            sizeof(int),
-                            cudaMemcpyHostToDevice));*/
             cudaCheckError(cudaMemcpy(&((*devClassifier)[j].threshold),
                             classifier.threshold,
                             sizeof(float),
@@ -707,6 +702,7 @@ void allocateGPUCascade(cascadeClassifier_t cascade,
                             cudaMemcpyHostToDevice)); //didn't expect hostToDevice here
 
         }
+        cudaFree(*devFeature);
         // once each stage has all of its features, copy it into the Cascade
 
         // copy classifier "array" in to stage

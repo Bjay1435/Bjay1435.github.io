@@ -120,7 +120,7 @@ void* threadDetectMultiScale(void* arg)
                 double sqSum   = findWindowMean(sqImage, detectionWindow);
                 double normalization = winMean * winMean - sqSum * invArea;
 
-                if (normalization > 1.0f) 
+                if (normalization > 1.0f)
                     normalization = sqrt(normalization);
                 else 
                     normalization = 1.0f;

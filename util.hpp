@@ -74,6 +74,8 @@ typedef struct imageData* imageData_t;
 
 imageData_t newImageData(const char *);
 
+void freeImData(imageData_t);
+
 imageData_t newImageDataCuda(const char *);
 
 IplImage* loadGrayImage(const char *);

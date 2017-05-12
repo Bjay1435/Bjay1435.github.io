@@ -114,6 +114,12 @@ imageData_t newImageData(const char * image_path)
     return i;
 }
 
+void freeImData(imageData_t imData)
+{
+    free(imData);
+}
+
+
 IplImage* loadGrayImage(const char * image_path)
 {
     IplImage* image = cvLoadImage(image_path, CV_LOAD_IMAGE_GRAYSCALE);

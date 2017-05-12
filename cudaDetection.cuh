@@ -79,6 +79,8 @@ void allocateGPUCascade(cascadeClassifier_t,
                         GPUHaarClassifier**,
                         GPUHaarFeature**);
 
+void freeGPUCascade(GPUHaarClassifierCascade*);
+
 
 
 #endif /* _CPU_DETECTION_CUH */

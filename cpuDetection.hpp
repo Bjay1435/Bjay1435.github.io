@@ -14,5 +14,8 @@
 std::vector<CvRect> runCPUdetect(cascadeClassifier_t, imageData_t);
 std::vector<CvRect> cpuDetectAtScale(cascadeClassifier_t, imageData_t, double);
 
+std::vector<CvRect> runCPUdetectOMP(cascadeClassifier_t, imageData_t);
+std::vector<CvRect> cpuDetectAtScaleOMP(cascadeClassifier_t, imageData_t, double);
+
 
 #endif /* _CPU_DETECTION_HPP */
